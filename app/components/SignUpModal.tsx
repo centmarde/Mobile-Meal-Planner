@@ -1,8 +1,10 @@
-import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import React, { useState } from 'react';
+import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../FirebaseConfig';
 import { router } from 'expo-router';
+import { validateEmail, validatePassword, validatePasswordMatch } from '../utils/passwordValidator';
+import { Theme } from '../utils/theme';
 
 interface SignUpModalProps {
   isVisible: boolean;
@@ -12,17 +14,45 @@ interface SignUpModalProps {
 const SignUpModal = ({ isVisible, onClose }: SignUpModalProps) => {
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [emailErrors, setEmailErrors] = useState<string[]>([]);
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+  const [confirmErrors, setConfirmErrors] = useState<string[]>([]);
 
-  const signUp = async () => {
-    try {
-      const user = await createUserWithEmailAndPassword(auth, signUpEmail, signUpPassword)
-      if (user) {
-        onClose();
-        router.replace('/(tabs)');
+  const validateEmailField = () => {
+    const { errors } = validateEmail(signUpEmail);
+    setEmailErrors(errors);
+    return errors;
+  };
+
+  const validatePasswordField = () => {
+    const { errors } = validatePassword(signUpPassword);
+    setPasswordErrors(errors);
+    return errors;
+  };
+
+  const validateConfirmField = () => {
+    const { errors } = validatePasswordMatch(signUpPassword, confirmPassword);
+    setConfirmErrors(errors);
+    return errors;
+  };
+
+  const validateAndSignUp = async () => {
+    const emailErrs = validateEmailField();
+    const passwordErrs = validatePasswordField();
+    const confirmErrs = validateConfirmField();
+    
+    if ([...emailErrs, ...passwordErrs, ...confirmErrs].length === 0) {
+      try {
+        const user = await createUserWithEmailAndPassword(auth, signUpEmail, signUpPassword)
+        if (user) {
+          onClose();
+          router.replace('/(tabs)');
+        }
+      } catch (error: any) {
+        console.log(error)
+        setEmailErrors([error.message]);
       }
-    } catch (error: any) {
-      console.log(error)
-      alert('Sign up failed: ' + error.message);
     }
   }
 
@@ -34,35 +64,78 @@ const SignUpModal = ({ isVisible, onClose }: SignUpModalProps) => {
       onRequestClose={onClose}
     >
       <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Create Account</Text>
-          <TextInput
-            style={styles.textInput}
-            placeholder="Email"
-            value={signUpEmail}
-            onChangeText={setSignUpEmail}
-          />
-          <TextInput
-            style={styles.textInput}
-            placeholder="Password"
-            value={signUpPassword}
-            onChangeText={setSignUpPassword}
-            secureTextEntry
-          />
-          <View style={styles.modalButtons}>
-            <TouchableOpacity
-              style={[styles.roundButton, styles.modalButton]}
-              onPress={onClose}
-            >
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.roundButton, styles.modalButton]}
-              onPress={signUp}
-            >
-              <Text style={styles.buttonText}>Sign Up</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={styles.modalWrapper}>
+          <ScrollView style={styles.scrollView}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Create Account</Text>
+              
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={[styles.textInput, emailErrors.length > 0 && styles.inputError]}
+                  placeholder="Email"
+                  value={signUpEmail}
+                  onChangeText={(text) => {
+                    setSignUpEmail(text);
+                    setEmailErrors([]);
+                  }}
+                  onBlur={validateEmailField}
+                  autoCapitalize="none"
+                />
+                {emailErrors.map((error, index) => (
+                  <Text key={`email-${index}`} style={styles.errorText}>{error}</Text>
+                ))}
+              </View>
+
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={[styles.textInput, passwordErrors.length > 0 && styles.inputError]}
+                  placeholder="Password"
+                  value={signUpPassword}
+                  onChangeText={(text) => {
+                    setSignUpPassword(text);
+                    setPasswordErrors([]);
+                  }}
+                  onBlur={validatePasswordField}
+                  secureTextEntry
+                />
+                {passwordErrors.map((error, index) => (
+                  <Text key={`password-${index}`} style={styles.errorText}>{error}</Text>
+                ))}
+              </View>
+
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={[styles.textInput, confirmErrors.length > 0 && styles.inputError]}
+                  placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChangeText={(text) => {
+                    setConfirmPassword(text);
+                    setConfirmErrors([]);
+                  }}
+                  onBlur={validateConfirmField}
+                  secureTextEntry
+                />
+                {confirmErrors.map((error, index) => (
+                  <Text key={`confirm-${index}`} style={styles.errorText}>{error}</Text>
+                ))}
+              </View>
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.roundButton, styles.modalButton]}
+                  onPress={onClose}
+                >
+                  <Text style={styles.buttonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.roundButton, styles.modalButton]}
+                  onPress={validateAndSignUp}
+                >
+                  <Text style={styles.buttonText}>Sign Up</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -74,68 +147,84 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: Theme.colors.overlay,
+  },
+  modalWrapper: {
+    width: Math.min(400, Dimensions.get('window').width * 0.9),
+    maxHeight: Dimensions.get('window').height * 0.8,
+    backgroundColor: Theme.colors.light,
+    borderRadius: Theme.roundness.lg,
+    padding: Theme.spacing.lg,
+    alignSelf: 'center',
+    ...Theme.shadows.medium,
+  },
+  scrollView: {
+    width: '100%',
   },
   modalContent: {
-    width: '90%',
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 20,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5
+    paddingHorizontal: Theme.spacing.md,
   },
   modalTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    marginBottom: 20,
-    color: '#1A237E',
+    fontSize: Theme.typography.sizes.xl,
+    fontWeight: Theme.typography.weights.semibold,
+    marginBottom: Theme.spacing.lg,
+    color: Theme.colors.primaryDark,
   },
   textInput: {
     height: 50,
-    width: '90%',
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E8EAF6',
+    width: '100%',
+    backgroundColor: Theme.colors.light,
+    borderColor: Theme.colors.secondaryLight,
     borderWidth: 2,
-    borderRadius: 15,
-    marginVertical: 15,
-    paddingHorizontal: 25,
-    fontSize: 16,
-    color: '#3C4858',
-    shadowColor: '#9E9E9E',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
+    borderRadius: Theme.roundness.md,
+    marginVertical: Theme.spacing.xs,
+    paddingHorizontal: Theme.spacing.xl,
+    fontSize: Theme.typography.sizes.md,
+    color: Theme.colors.dark,
+    ...Theme.shadows.light,
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    marginTop: 20,
+    marginTop: Theme.spacing.lg,
+    paddingHorizontal: Theme.spacing.xs,
   },
   modalButton: {
     flex: 1,
-    marginHorizontal: 10,
+    marginHorizontal: Theme.spacing.xs,
   },
   roundButton: {
-    backgroundColor: '#5C6BC0',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-    minWidth: 120,
+    backgroundColor: Theme.colors.primary,
+    paddingVertical: Theme.spacing.md,
+    paddingHorizontal: Theme.spacing.lg,
+    borderRadius: Theme.roundness.lg,
+    minWidth: 100,
     alignItems: 'center',
   },
   buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    color: Theme.colors.light,
+    fontSize: Theme.typography.sizes.sm,
+    fontWeight: Theme.typography.weights.light,
+  },
+  errorContainer: {
+    width: '90%',
+    marginVertical: Theme.spacing.sm,
+  },
+  errorText: {
+    color: Theme.colors.error,
+    fontSize: Theme.typography.sizes.xs,
+    marginLeft: Theme.spacing.sm,
+    marginTop: Theme.spacing.xs,
+  },
+  inputContainer: {
+    width: '90%',
+    marginBottom: Theme.spacing.sm,
+  },
+  inputError: {
+    borderColor: Theme.colors.error,
+    borderWidth: 2,
   },
 });
 
