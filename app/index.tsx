@@ -1,12 +1,14 @@
-import { Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView } from 'react-native'
+import { Text, StyleSheet, TextInput, SafeAreaView, TouchableOpacity, View, Image } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { auth } from '../FirebaseConfig'
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
+import { signInWithEmailAndPassword } from 'firebase/auth'
 import { router } from 'expo-router'
+import SignUpModal from './components/SignUpModal'
 
 const index = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isModalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -30,27 +32,33 @@ const index = () => {
     }
   }
 
-  const signUp = async () => {
-    try {
-      const user = await createUserWithEmailAndPassword(auth, email, password)
-      if (user) router.replace('/(tabs)');
-    } catch (error: any) {
-      console.log(error)
-      alert('Sign in failed: ' + error.message);
-    }
-  }
-
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Login</Text>
+      <Image
+        style={styles.logo}
+        source={require('../assets/images/adaptive-icon.png')} // For local image
+        // OR use this for remote image:
+        // source={{ uri: 'https://your-image-url.com/image.png' }}
+      />
+      <Text style={styles.title}>
+        👋🏼 Greetings!
+      </Text>
       <TextInput style={styles.textInput} placeholder="email" value={email} onChangeText={setEmail} />
       <TextInput style={styles.textInput} placeholder="password" value={password} onChangeText={setPassword} secureTextEntry/>
-      <TouchableOpacity style={styles.button} onPress={signIn}>
-        <Text style={styles.text}>Login</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={signUp}>
-        <Text style={styles.text}>Make Account</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.roundButton} onPress={signIn}>
+          <Text style={styles.buttonText}>Login</Text>
+        </TouchableOpacity>
+        <View style={styles.buttonSpacer} />
+        <TouchableOpacity style={styles.roundButton} onPress={() => setModalVisible(true)}>
+          <Text style={styles.buttonText}>Make Account</Text>
+        </TouchableOpacity>
+      </View>
+
+      <SignUpModal 
+        isVisible={isModalVisible}
+        onClose={() => setModalVisible(false)}
+      />
     </SafeAreaView>
   )
 }
@@ -87,23 +95,32 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4, // Slightly elevated for a subtle 3D effect
   },
-  button: {
-    width: '90%',
-    marginVertical: 15,
-    backgroundColor: '#5C6BC0', // A lighter indigo to complement the title color
-    padding: 20,
-    borderRadius: 15, // Matching rounded corners for consistency
-    alignItems: 'center',
+  buttonContainer: {
+    flexDirection: 'row',
     justifyContent: 'center',
-    shadowColor: '#5C6BC0', // Shadow color to match the button for a cohesive look
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 5,
-    elevation: 5,
+    width: '90%',
+    marginTop: 20,
   },
-  text: {
-    color: '#FFFFFF', // Maintained white for clear visibility
-    fontSize: 18, // Slightly larger for emphasis
-    fontWeight: '600', // Semi-bold for a balanced weight
-  }
+  buttonSpacer: {
+    width: 20,
+  },
+  roundButton: {
+    backgroundColor: '#5C6BC0',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  logo: {
+    width: 150,
+    height: 150,
+    marginBottom: 20,
+    resizeMode: 'contain',
+  },
 });
