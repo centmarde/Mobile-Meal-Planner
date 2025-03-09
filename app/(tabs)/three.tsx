@@ -1,8 +1,8 @@
-// Import TouchableOpacity from react-native
 import React, { useState } from 'react';
 import { SafeAreaView, StyleSheet, TouchableOpacity, Text, View } from 'react-native';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app } from '../../FirebaseConfig';
+import { Theme } from '../utils/theme';
 
 export default function TabFourScreen() {
   const [functionResult, setFunctionResult] = useState('');
@@ -35,41 +35,39 @@ export default function TabFourScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    backgroundColor: Theme.colors.light,
   },
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
-    marginBottom: -40,
+    padding: Theme.spacing.lg,
+    marginBottom: -Theme.spacing.xl,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    fontSize: Theme.typography.sizes.xl,
+    fontWeight: Theme.typography.weights.bold,
+    marginBottom: Theme.spacing.lg,
+    color: Theme.colors.dark,
   },
   button: {
-    padding: 10,
-    borderRadius: 15,
+    padding: Theme.spacing.sm,
+    borderRadius: Theme.roundness.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#5C6BC0',
-    shadowColor: '#5C6BC0',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 5,
-    elevation: 5,
-    marginLeft: 10,
+    backgroundColor: Theme.colors.primary,
+    ...Theme.shadows.medium,
+    marginLeft: Theme.spacing.sm,
   },
   buttonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
+    color: Theme.colors.light,
+    fontSize: Theme.typography.sizes.lg,
+    fontWeight: Theme.typography.weights.semibold,
   },
   text: {
-    color: '#000', // Maintained white for clear visibility
-    fontSize: 18, // Slightly larger for emphasis
-    fontWeight: '600', // Semi-bold for a balanced weight
-    margin: 20,
+    color: Theme.colors.dark,
+    fontSize: Theme.typography.sizes.lg,
+    fontWeight: Theme.typography.weights.semibold,
+    margin: Theme.spacing.lg,
   }
 });

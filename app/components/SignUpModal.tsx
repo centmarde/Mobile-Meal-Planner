@@ -3,8 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../FirebaseConfig';
 import { router } from 'expo-router';
-import { validateEmail, validatePassword, validatePasswordMatch } from '../utils/passwordValidator';
+import { validateEmail, validatePassword, validatePasswordMatch } from '../utils/Validator';
 import { Theme } from '../utils/theme';
+import { Toaster, toast } from 'sonner';
 
 interface SignUpModalProps {
   isVisible: boolean;
@@ -46,11 +47,13 @@ const SignUpModal = ({ isVisible, onClose }: SignUpModalProps) => {
       try {
         const user = await createUserWithEmailAndPassword(auth, signUpEmail, signUpPassword)
         if (user) {
+          toast.success('Account created successfully!');
           onClose();
           router.replace('/(tabs)');
         }
       } catch (error: any) {
         console.log(error)
+        toast.error(error.message);
         setEmailErrors([error.message]);
       }
     }
@@ -63,6 +66,7 @@ const SignUpModal = ({ isVisible, onClose }: SignUpModalProps) => {
       visible={isVisible}
       onRequestClose={onClose}
     >
+      <Toaster />
       <View style={styles.modalContainer}>
         <View style={styles.modalWrapper}>
           <ScrollView style={styles.scrollView}>
