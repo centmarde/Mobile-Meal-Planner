@@ -1,14 +1,24 @@
 import { Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView } from 'react-native'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { auth } from '../FirebaseConfig'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
 import { router } from 'expo-router'
-
 
 const index = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setTimeout(() => {
+          router.replace('/(tabs)');
+        }, 0);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const signIn = async () => {
     try {
