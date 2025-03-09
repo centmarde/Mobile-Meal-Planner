@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../../FirebaseConfig';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { Theme } from '../utils/theme';
 
 export default function TabTwoScreen() {
   const [task, setTask] = useState('');
@@ -85,18 +86,19 @@ export default function TabTwoScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    backgroundColor: Theme.colors.light,
   },
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: Theme.spacing.lg,
   },
   mainTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 10, // Adjust spacing as needed
-    color: '#333', // Choose a color that fits your app theme
+    fontSize: Theme.typography.sizes.xxl,
+    fontWeight: Theme.typography.weights.bold,
+    marginBottom: Theme.spacing.sm,
+    color: Theme.colors.dark,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -106,47 +108,40 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 40,
-    borderColor: 'gray',
+    borderColor: Theme.colors.secondary,
     borderWidth: 1,
-    padding: 10,
-    flex: 1, // Adjusted to take available space
-    marginRight: 10, // Add margin to separate input and button
+    padding: Theme.spacing.sm,
+    flex: 1,
+    marginRight: Theme.spacing.sm,
+    borderRadius: Theme.roundness.sm,
   },
   addButton: {
-    padding: 10,
-    borderRadius: 20,
+    padding: Theme.spacing.sm,
+    borderRadius: Theme.roundness.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFA726', // Use a distinct color for the add button
-    shadowColor: '#FFA726',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 5,
-    elevation: 5,
+    backgroundColor: Theme.colors.primary,
+    ...Theme.shadows.medium,
   },
   buttonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
+    color: Theme.colors.light,
+    fontSize: Theme.typography.sizes.lg,
+    fontWeight: Theme.typography.weights.semibold,
   },
   todoContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginVertical: 10,
+    marginVertical: Theme.spacing.sm,
     width: '100%',
   },
   button: {
-    padding: 10,
-    borderRadius: 15,
+    padding: Theme.spacing.sm,
+    borderRadius: Theme.roundness.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#5C6BC0',
-    shadowColor: '#5C6BC0',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 5,
-    elevation: 5,
-    marginLeft: 10,
+    backgroundColor: Theme.colors.secondary,
+    ...Theme.shadows.medium,
+    marginLeft: Theme.spacing.sm,
   },
 });
