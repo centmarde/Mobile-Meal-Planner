@@ -5,21 +5,34 @@ import { Pressable, StyleSheet, View, Image, Text } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Theme, { Colors } from '../utils/theme';
 import { auth } from '../../FirebaseConfig';
+import { signOut } from 'firebase/auth';
+import { Toaster, toast } from 'sonner';
 
 export default function SideBar() {
   const [collapsed, setCollapsed] = useState(true);
 
+
   const handleSignOut = async () => {
     try {
-      await auth.signOut();
-      window.location.href = '/';
+      await signOut(auth);
+      toast.success('Signed out successfully');
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
     } catch (error: any) {
-      alert('Sign out failed: ' + error.message);
+      toast.error('Sign out failed: ' + error.message);
     }
   };
 
   return (
     <View style={styles.container}>
+       <Toaster 
+      position="top-center" 
+      toastOptions={{style: {
+        background: Colors.success, // Set your success color here
+        color: Colors.light,
+      },}}
+    />
       <Sidebar
         collapsed={collapsed}
         width="270px"
