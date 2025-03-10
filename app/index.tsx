@@ -109,18 +109,10 @@ const styles = StyleSheet.create({
     width: Theme.spacing.lg,
   },
   roundButton: {
-    backgroundColor: Theme.colors.primary,
-    paddingVertical: Theme.spacing.sm,
-    paddingHorizontal: Theme.spacing.lg,
-    borderRadius: Theme.roundness.lg,
-    minWidth: 120,
-    alignItems: 'center',
-    ...Theme.shadows.light,
+    ...Theme.buttons.primary,
   },
   buttonText: {
-    color: Theme.colors.light,
-    fontSize: Theme.typography.sizes.md,
-    fontWeight: Theme.typography.weights.semibold,
+    ...Theme.buttons.text,
   },
   logo: {
     width: 150,
