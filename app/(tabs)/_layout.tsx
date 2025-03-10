@@ -1,87 +1,41 @@
-import React from 'react';
+import { Tabs } from 'expo-router';
+import { Theme } from '../utils/theme';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Link, Tabs } from 'expo-router';
-import { Pressable, View, StyleSheet } from 'react-native';
 import SideBar from '../components/SideBar';
-
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
-  color: string;
-}) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
-}
+import { View, StyleSheet } from 'react-native';
+import { ContextProvider } from '../context/ContextProvider';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
-    <View style={styles.container}>
-      <SideBar />
-      <View style={styles.content}>
+    <ContextProvider>
+      <View style={styles.container}>
+        <SideBar />
         <Tabs
           screenOptions={{
-            tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-            // Disable the static render of the header on web
-            // to prevent a hydration error in React Navigation v6.
-            headerShown: false,
-          }}>
+            tabBarActiveTintColor: Theme.colors.primary,
+          }}
+        >
           <Tabs.Screen
             name="index"
             options={{
-              title: 'Sign Out',
-              tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-              headerRight: () => (
-                <Link href="/modal" asChild>
-                  <Pressable>
-                    {({ pressed }) => (
-                      <FontAwesome
-                        name="info-circle"
-                        size={25}
-                        color={Colors[colorScheme ?? 'light'].text}
-                        style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                      />
-                    )}
-                  </Pressable>
-                </Link>
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="two"
-            options={{
-              title: 'Database',
-              tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-            }}
-          />
-          <Tabs.Screen
-            name="three"
-            options={{
-              title: 'Storage',
-              tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-            }}
-          />
-          <Tabs.Screen
-            name="four"
-            options={{
-              title: 'Functions',
-              tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+              title: 'Home',
+              headerShown: false,
+              tabBarIcon: ({ color }) => <FontAwesome name="home" size={24} color={color} />,
             }}
           />
         </Tabs>
       </View>
-    </View>
+    </ContextProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    position: 'relative',
   },
-  content: {
-    flex: 1,
-  },
+  tabs: {
+    width: '100%',
+    height: '100%',
+  }
 });
