@@ -43,7 +43,7 @@ export default function SideBar() {
           border: `1px solid ${Colors.secondaryLight}`,
           height: '100%',
           position: 'absolute',
-          left: 0,
+          right: 0,
           top: 0,
           zIndex: 1000,
           fontFamily: 'Roboto, sans-serif',
@@ -133,7 +133,7 @@ export default function SideBar() {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    left: 0,
+    right: 0,
     top: 0,
     bottom: 0,
     zIndex: 1000,
@@ -155,11 +155,11 @@ const styles = StyleSheet.create({
     ...Theme.shadows.medium,
   },
   toggleButtonCollapsed: {
-    left: 5,
+    right: 5,
     transform: [{translateY: 0}, {rotate: '0deg'}],
   },
   toggleButtonExpanded: {
-    left: 245,
+    right: 245,
     transform: [{translateY: 0}, {rotate: '180deg'}],
   },
   logoContainer: {
