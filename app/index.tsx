@@ -6,6 +6,8 @@ import { router } from 'expo-router'
 import SignUpModal from './components/SignUpModal'
 import { Theme } from './utils/theme';
 import { Toaster, toast } from 'sonner'
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const index = () => {
   const [email, setEmail] = useState('');
@@ -43,13 +45,31 @@ const index = () => {
         <Toaster position="top-center" expand={true} richColors />
         <Image
           style={styles.logo}
-          source={require('../assets/images/adaptive-icon.png')} // For local image
-          // OR use this for remote image:
-          // source={{ uri: 'https://your-image-url.com/image.png' }}
+          source={require('../assets/images/adaptive-icon.png')}
         />
-        <Text style={styles.title}>
-          👋🏼 Greetings!
-        </Text>
+        
+        <View style={styles.welcomeContainer}>
+          <Animated.View entering={FadeInDown.delay(300).duration(700)}>
+            <Text style={styles.greetingEmoji}>👋🏼</Text>
+          </Animated.View>
+          <Animated.View entering={FadeInDown.delay(600).duration(700)}>
+            <Text style={styles.greeting}>Hello there!</Text>
+          </Animated.View>
+          <Animated.View entering={FadeInDown.delay(900).duration(700)}>
+            <View style={styles.welcomeTextWrapper}>
+              <Text style={styles.welcomeText}>Welcome to </Text>
+              <LinearGradient
+                colors={[Theme.colors.primary, Theme.colors.secondary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.gradientText}
+              >
+                <Text style={styles.appName}>Meal Planner</Text>
+              </LinearGradient>
+            </View>
+          </Animated.View>
+        </View>
+
         <TextInput style={styles.textInput} placeholder="email" value={email} onChangeText={setEmail} />
         <TextInput style={styles.textInput} placeholder="password" value={password} onChangeText={setPassword} secureTextEntry/>
         <View style={styles.buttonContainer}>
@@ -85,6 +105,41 @@ const styles = StyleSheet.create({
     fontWeight: Theme.typography.weights.heavy,
     marginBottom: Theme.spacing.xl,
     color: Theme.colors.dark,
+  },
+  welcomeContainer: {
+    alignItems: 'center',
+    marginBottom: Theme.spacing.xl,
+  },
+  greetingEmoji: {
+    fontSize: 40,
+    marginBottom: Theme.spacing.sm,
+  },
+  greeting: {
+    fontSize: Theme.typography.sizes.xl,
+    fontWeight: Theme.typography.weights.heavy,
+    color: Theme.colors.dark,
+    marginBottom: Theme.spacing.sm,
+  },
+  welcomeTextWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  welcomeText: {
+    fontSize: Theme.typography.sizes.lg,
+    fontWeight: Theme.typography.weights.medium,
+    color: Theme.colors.dark,
+  },
+  appName: {
+    fontSize: Theme.typography.sizes.xl,
+    fontWeight: Theme.typography.weights.heavy,
+    color: Theme.colors.light,
+    paddingHorizontal: Theme.spacing.sm,
+  },
+  gradientText: {
+    borderRadius: Theme.roundness.sm,
+    marginLeft: 4,
   },
   textInput: {
     height: 50,

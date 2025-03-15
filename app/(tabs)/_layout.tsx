@@ -78,19 +78,19 @@ export default function TabLayout() {
             }}
           />
           <Tabs.Screen
-            name="meals"
+            name="two"
             options={{
               title: "Meals",
             }}
           />
           <Tabs.Screen
-            name="planner"
+            name="three"
             options={{
               title: "Planner",
             }}
           />
           <Tabs.Screen
-            name="shopping"
+            name="four"
             options={{
               title: "Shopping",
             }}
