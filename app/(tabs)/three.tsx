@@ -1,28 +1,17 @@
 import React, { useState } from 'react';
 import { SafeAreaView, StyleSheet, TouchableOpacity, Text, View, TextInput, ScrollView } from 'react-native';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app } from '../../FirebaseConfig';
 import { Theme } from '../utils/theme';
 import { Calendar } from 'react-native-calendars';
+import TimeSelectionDialog, { MealTimeInfo } from '../components/TimeSelectionDialog';
 
 export default function TabFourScreen() {
-  const [functionResult, setFunctionResult] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [mealPlans, setMealPlans] = useState<{ [key: string]: string[] }>({});
   const [currentMeal, setCurrentMeal] = useState('');
   const [markedDates, setMarkedDates] = useState({});
-
-  const callHelloWorldFunction = async () => {
-    const functions = getFunctions(app, 'us-central1');
-    const helloWorld = httpsCallable(functions, 'helloWorld');
-    try {
-      const result: any = await helloWorld();
-      setFunctionResult(result.data.message);
-    } catch (error) {
-      console.error("Error calling function:", error);
-      setFunctionResult('Failed to call function');
-    }
-  };
+  const [isTimeDialogVisible, setIsTimeDialogVisible] = useState(false);
+  const [selectedTimeInfo, setSelectedTimeInfo] = useState<MealTimeInfo | null>(null);
 
   interface DayObject {
     dateString: string;
@@ -39,6 +28,9 @@ export default function TabFourScreen() {
     const selectedDate = day.dateString;
     setSelectedDate(selectedDate);
 
+    // Show time selection dialog
+    setIsTimeDialogVisible(true);
+
     // Mark the selected date
     const updatedMarkedDates: MarkedDates = {
       ...markedDates,
@@ -50,13 +42,41 @@ export default function TabFourScreen() {
     setMarkedDates(updatedMarkedDates);
   };
 
+  const handleSelectTime = (timeInfo: MealTimeInfo) => {
+    setSelectedTimeInfo(timeInfo);
+  };
+
+  // Helper function to get meal emoji
+  const getMealEmoji = (mealType: string | undefined | null) => {
+    switch(mealType) {
+      case 'breakfast': return '🍳';
+      case 'lunch': return '🥗';
+      case 'dinner': return '🍽️';
+      case 'afternoon_snack': return '🍎';
+      case 'midnight_snack': return '🍪';
+      default: return '🕒';
+    }
+  };
+
   const addMealPlan = () => {
     if (!currentMeal || !selectedDate) return;
+
+    // Build meal description with time and meal type
+    let mealDescription = currentMeal;
+    
+    if (selectedTimeInfo) {
+      const mealEmoji = getMealEmoji(selectedTimeInfo.mealType);
+      if (selectedTimeInfo.mealType) {
+        mealDescription = `${mealEmoji} [${selectedTimeInfo.mealType}] ${currentMeal} (${selectedTimeInfo.time})`;
+      } else {
+        mealDescription = `${mealEmoji} ${currentMeal} (${selectedTimeInfo.time})`;
+      }
+    }
 
     // Update meal plans state
     setMealPlans((prevPlans) => ({
       ...prevPlans,
-      [selectedDate]: [...(prevPlans[selectedDate] || []), currentMeal]
+      [selectedDate]: [...(prevPlans[selectedDate] || []), mealDescription]
     }));
 
     // Clear input field
@@ -91,6 +111,13 @@ export default function TabFourScreen() {
             <View style={styles.mealPlanSection}>
               <Text style={styles.dateTitle}>
                 Meals for {selectedDate}
+                {selectedTimeInfo && (
+                  <Text>
+                    {' '}{getMealEmoji(selectedTimeInfo.mealType)}{' '}
+                    {selectedTimeInfo.mealType ? `(${selectedTimeInfo.mealType}, ` : '('}
+                    {selectedTimeInfo.time})
+                  </Text>
+                )}
               </Text>
               
               <View style={styles.inputContainer}>
@@ -109,7 +136,14 @@ export default function TabFourScreen() {
                 <View style={styles.mealsList}>
                   <Text style={styles.mealsListTitle}>Planned Meals:</Text>
                   {mealPlans[selectedDate].map((meal, index) => (
-                    <View key={index} style={styles.mealItem}>
+                    <View key={index} style={[
+                      styles.mealItem,
+                      meal.includes('[breakfast]') && styles.breakfastMealItem,
+                      meal.includes('[lunch]') && styles.lunchMealItem,
+                      meal.includes('[dinner]') && styles.dinnerMealItem,
+                      meal.includes('[afternoon_snack]') && styles.afternoonSnackMealItem,
+                      meal.includes('[midnight_snack]') && styles.midnightSnackMealItem,
+                    ]}>
                       <Text style={styles.mealText}>{meal}</Text>
                     </View>
                   ))}
@@ -121,15 +155,15 @@ export default function TabFourScreen() {
           ) : (
             <Text style={styles.text}>Select a date to plan your meals</Text>
           )}
-
-          <View style={styles.functionSection}>
-            <Text style={styles.text}>{functionResult}</Text>
-            <TouchableOpacity style={styles.button} onPress={callHelloWorldFunction}>
-              <Text style={styles.buttonText}>Call Hello World Function</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </ScrollView>
+
+      <TimeSelectionDialog 
+        isVisible={isTimeDialogVisible}
+        onClose={() => setIsTimeDialogVisible(false)}
+        onSelectTime={handleSelectTime}
+        selectedDate={selectedDate}
+      />
     </SafeAreaView>
   );
 }
@@ -146,7 +180,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     padding: Theme.spacing.lg,
-    marginBottom: -Theme.spacing.xl,
+    marginBottom: Theme.spacing.xl,
   },
   title: {
     fontSize: Theme.typography.sizes.xl,
@@ -209,6 +243,26 @@ const styles = StyleSheet.create({
     borderRadius: Theme.roundness.sm,
     marginBottom: Theme.spacing.sm,
   },
+  breakfastMealItem: {
+    borderLeftWidth: 4,
+    borderLeftColor: Theme.colors.warning,
+  },
+  lunchMealItem: {
+    borderLeftWidth: 4,
+    borderLeftColor: Theme.colors.success,
+  },
+  dinnerMealItem: {
+    borderLeftWidth: 4,
+    borderLeftColor: Theme.colors.primary,
+  },
+  afternoonSnackMealItem: {
+    borderLeftWidth: 4,
+    borderLeftColor: Theme.colors.warning, // Using the warning color (orange)
+  },
+  midnightSnackMealItem: {
+    borderLeftWidth: 4,
+    borderLeftColor: Theme.colors.secondary, // Using secondary color (soft pink)
+  },
   mealText: {
     fontSize: Theme.typography.sizes.md,
     color: Theme.colors.dark,
@@ -218,15 +272,6 @@ const styles = StyleSheet.create({
     color: Theme.colors.secondary,
     fontStyle: 'italic',
     marginTop: Theme.spacing.sm,
-  },
-  functionSection: {
-    marginTop: Theme.spacing.xl,
-    alignItems: 'center',
-    width: '100%',
-  },
-  button: {
-    ...Theme.buttons.primary,
-    marginLeft: Theme.spacing.sm,
   },
   buttonText: {
     ...Theme.buttons.text,
