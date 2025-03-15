@@ -61,3 +61,6 @@ export const useMealContext = (): MealContextType => {
   }
   return context;
 };
+
+// Add default export for the MealProvider component
+export default MealProvider;

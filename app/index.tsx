@@ -46,6 +46,7 @@ const index = () => {
         <Image
           style={styles.logo}
           source={require('../assets/images/adaptive-icon.png')}
+          resizeMode="contain"
         />
         
         <View style={styles.welcomeContainer}>
@@ -173,6 +174,5 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     marginBottom: Theme.spacing.lg,
-    resizeMode: 'contain',
   },
 });
