@@ -52,7 +52,7 @@ export const Theme = {
       heavy: '800',
     },
   },
-  
+
   shadows: {
     light: {
       shadowColor: Colors.dark,
@@ -76,6 +76,27 @@ export const Theme = {
       elevation: 6,
     },
   },
+
+  buttons: {
+    primary: {
+      backgroundColor: Colors.primary,
+      paddingVertical: 8,
+      paddingHorizontal: 24,
+      borderRadius: 25,
+      minWidth: 120,
+      alignItems: 'center',
+      shadowColor: Colors.dark,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    text: {
+      color: Colors.light,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  },
 } as const;
 
 export type ThemeColors = keyof typeof Colors;
@@ -83,5 +104,6 @@ export type ThemeSpacing = keyof typeof Theme.spacing;
 export type ThemeRoundness = keyof typeof Theme.roundness;
 export type ThemeTypographySize = keyof typeof Theme.typography.sizes;
 export type ThemeTypographyWeight = keyof typeof Theme.typography.weights;
+export type ThemeButtonStyle = keyof typeof Theme.buttons;
 
 export default Theme;

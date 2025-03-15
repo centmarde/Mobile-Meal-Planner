@@ -49,3 +49,10 @@ export const validateEmail = (email: string): ValidationResult => {
     errors
   };
 };
+
+// Add default export combining all validator functions
+export default {
+  validatePassword,
+  validatePasswordMatch,
+  validateEmail
+};

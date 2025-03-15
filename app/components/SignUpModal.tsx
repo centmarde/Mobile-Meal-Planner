@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { validateEmail, validatePassword, validatePasswordMatch } from '../utils/Validator';
 import { Theme } from '../utils/theme';
 import { Toaster, toast } from 'sonner';
+import { BlurView } from 'expo-blur';
 
 interface SignUpModalProps {
   isVisible: boolean;
@@ -67,98 +68,110 @@ const SignUpModal = ({ isVisible, onClose }: SignUpModalProps) => {
       onRequestClose={onClose}
     >
       <Toaster />
-      <View style={styles.modalContainer}>
-        <View style={styles.modalWrapper}>
-          <ScrollView style={styles.scrollView}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Create Account</Text>
-              
-              <View style={styles.inputContainer}>
-                <TextInput
-                  style={[styles.textInput, emailErrors.length > 0 && styles.inputError]}
-                  placeholder="Email"
-                  value={signUpEmail}
-                  onChangeText={(text) => {
-                    setSignUpEmail(text);
-                    setEmailErrors([]);
-                  }}
-                  onBlur={validateEmailField}
-                  autoCapitalize="none"
-                />
-                {emailErrors.map((error, index) => (
-                  <Text key={`email-${index}`} style={styles.errorText}>{error}</Text>
-                ))}
-              </View>
+      <BlurView 
+        intensity={20} 
+        tint="dark" 
+        style={styles.blurContainer}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalWrapper}>
+            <ScrollView style={styles.scrollView}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Create Account</Text>
+                
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={[styles.textInput, emailErrors.length > 0 && styles.inputError]}
+                    placeholder="Email"
+                    value={signUpEmail}
+                    onChangeText={(text) => {
+                      setSignUpEmail(text);
+                      setEmailErrors([]);
+                    }}
+                    onBlur={validateEmailField}
+                    autoCapitalize="none"
+                  />
+                  {emailErrors.map((error, index) => (
+                    <Text key={`email-${index}`} style={styles.errorText}>{error}</Text>
+                  ))}
+                </View>
 
-              <View style={styles.inputContainer}>
-                <TextInput
-                  style={[styles.textInput, passwordErrors.length > 0 && styles.inputError]}
-                  placeholder="Password"
-                  value={signUpPassword}
-                  onChangeText={(text) => {
-                    setSignUpPassword(text);
-                    setPasswordErrors([]);
-                  }}
-                  onBlur={validatePasswordField}
-                  secureTextEntry
-                />
-                {passwordErrors.map((error, index) => (
-                  <Text key={`password-${index}`} style={styles.errorText}>{error}</Text>
-                ))}
-              </View>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={[styles.textInput, passwordErrors.length > 0 && styles.inputError]}
+                    placeholder="Password"
+                    value={signUpPassword}
+                    onChangeText={(text) => {
+                      setSignUpPassword(text);
+                      setPasswordErrors([]);
+                    }}
+                    onBlur={validatePasswordField}
+                    secureTextEntry
+                  />
+                  {passwordErrors.map((error, index) => (
+                    <Text key={`password-${index}`} style={styles.errorText}>{error}</Text>
+                  ))}
+                </View>
 
-              <View style={styles.inputContainer}>
-                <TextInput
-                  style={[styles.textInput, confirmErrors.length > 0 && styles.inputError]}
-                  placeholder="Confirm Password"
-                  value={confirmPassword}
-                  onChangeText={(text) => {
-                    setConfirmPassword(text);
-                    setConfirmErrors([]);
-                  }}
-                  onBlur={validateConfirmField}
-                  secureTextEntry
-                />
-                {confirmErrors.map((error, index) => (
-                  <Text key={`confirm-${index}`} style={styles.errorText}>{error}</Text>
-                ))}
-              </View>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={[styles.textInput, confirmErrors.length > 0 && styles.inputError]}
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChangeText={(text) => {
+                      setConfirmPassword(text);
+                      setConfirmErrors([]);
+                    }}
+                    onBlur={validateConfirmField}
+                    secureTextEntry
+                  />
+                  {confirmErrors.map((error, index) => (
+                    <Text key={`confirm-${index}`} style={styles.errorText}>{error}</Text>
+                  ))}
+                </View>
 
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.roundButton, styles.modalButton]}
-                  onPress={onClose}
-                >
-                  <Text style={styles.buttonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.roundButton, styles.modalButton]}
-                  onPress={validateAndSignUp}
-                >
-                  <Text style={styles.buttonText}>Sign Up</Text>
-                </TouchableOpacity>
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[Theme.buttons.primary, styles.modalButton]}
+                    onPress={onClose}
+                  >
+                    <Text style={Theme.buttons.text}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[Theme.buttons.primary, styles.modalButton]}
+                    onPress={validateAndSignUp}
+                  >
+                    <Text style={Theme.buttons.text}>Sign Up</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          </ScrollView>
+            </ScrollView>
+          </View>
         </View>
-      </View>
+      </BlurView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
+  blurContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(33, 33, 33, 0.3)', // Reduced opacity to show blur effect
+  },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Theme.colors.overlay,
+    width: '100%',
   },
   modalWrapper: {
     width: Math.min(400, Dimensions.get('window').width * 0.9),
     maxHeight: Dimensions.get('window').height * 0.8,
     backgroundColor: Theme.colors.light,
     borderRadius: Theme.roundness.lg,
-    padding: Theme.spacing.lg,
+    padding: Theme.spacing.sm,
     alignSelf: 'center',
     ...Theme.shadows.medium,
   },
@@ -198,14 +211,6 @@ const styles = StyleSheet.create({
   modalButton: {
     flex: 1,
     marginHorizontal: Theme.spacing.xs,
-  },
-  roundButton: {
-    backgroundColor: Theme.colors.primary,
-    paddingVertical: Theme.spacing.md,
-    paddingHorizontal: Theme.spacing.lg,
-    borderRadius: Theme.roundness.lg,
-    minWidth: 100,
-    alignItems: 'center',
   },
   buttonText: {
     color: Theme.colors.light,
