@@ -1,17 +1,35 @@
-import React, { useState } from 'react';
-import { SafeAreaView, StyleSheet, TouchableOpacity, Text, View, TextInput, ScrollView } from 'react-native';
-import { app } from '../../FirebaseConfig';
+import React, { useState, useEffect } from 'react';
+import { SafeAreaView, StyleSheet, Text, View, ScrollView, Alert } from 'react-native';
+import { app, auth } from '../../FirebaseConfig';
 import { Theme } from '../utils/theme';
 import { Calendar } from 'react-native-calendars';
 import TimeSelectionDialog, { MealTimeInfo } from '../components/TimeSelectionDialog';
+import { getMealEmoji, MealData } from '../utils/mealPlanUtils';
+import AddMealForm from '../components/threeComponents/AddMealForm';
+import MealList from '../components/threeComponents/MealList';
+import MealSuggestionDialog from '../components/threeComponents/MealSuggestionDialog';
 
 export default function TabFourScreen() {
   const [selectedDate, setSelectedDate] = useState('');
   const [mealPlans, setMealPlans] = useState<{ [key: string]: string[] }>({});
-  const [currentMeal, setCurrentMeal] = useState('');
   const [markedDates, setMarkedDates] = useState({});
   const [isTimeDialogVisible, setIsTimeDialogVisible] = useState(false);
+  const [isSuggestionDialogVisible, setIsSuggestionDialogVisible] = useState(false);
   const [selectedTimeInfo, setSelectedTimeInfo] = useState<MealTimeInfo | null>(null);
+  const [suggestedMeal, setSuggestedMeal] = useState<MealData | null>(null);
+  const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Check if user is logged in
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      setIsUserLoggedIn(!!user);
+      if (!user) {
+        Alert.alert('Authentication Required', 'Please log in to use the meal planner');
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   interface DayObject {
     dateString: string;
@@ -44,48 +62,49 @@ export default function TabFourScreen() {
 
   const handleSelectTime = (timeInfo: MealTimeInfo) => {
     setSelectedTimeInfo(timeInfo);
-  };
-
-  // Helper function to get meal emoji
-  const getMealEmoji = (mealType: string | undefined | null) => {
-    switch(mealType) {
-      case 'breakfast': return '🍳';
-      case 'lunch': return '🥗';
-      case 'dinner': return '🍽️';
-      case 'afternoon_snack': return '🍎';
-      case 'midnight_snack': return '🍪';
-      default: return '🕒';
-    }
-  };
-
-  const addMealPlan = () => {
-    if (!currentMeal || !selectedDate) return;
-
-    // Build meal description with time and meal type
-    let mealDescription = currentMeal;
     
-    if (selectedTimeInfo) {
-      const mealEmoji = getMealEmoji(selectedTimeInfo.mealType);
-      if (selectedTimeInfo.mealType) {
-        mealDescription = `${mealEmoji} [${selectedTimeInfo.mealType}] ${currentMeal} (${selectedTimeInfo.time})`;
-      } else {
-        mealDescription = `${mealEmoji} ${currentMeal} (${selectedTimeInfo.time})`;
-      }
-    }
+    // After selecting time, show the meal suggestion dialog
+    setIsTimeDialogVisible(false);
+    setIsSuggestionDialogVisible(true);
+  };
 
-    // Update meal plans state
-    setMealPlans((prevPlans) => ({
-      ...prevPlans,
-      [selectedDate]: [...(prevPlans[selectedDate] || []), mealDescription]
-    }));
+  const handleSelectSuggestedMeal = (meal: MealData) => {
+    setSuggestedMeal(meal);
+    setIsSuggestionDialogVisible(false);
+  };
 
-    // Clear input field
-    setCurrentMeal('');
+  const handleManualInput = () => {
+    setIsSuggestionDialogVisible(false);
+    setSuggestedMeal(null);
+  };
+
+  const handleUpdateMealPlans = (updatedMealPlans: { [key: string]: string[] }) => {
+    setMealPlans(updatedMealPlans);
+    // Clear the suggested meal after adding it
+    setSuggestedMeal(null);
+    
+    // Force refresh of the MealList by toggling a key or timestamp
+    // This ensures the list updates after a new meal is added
+    setSelectedDate(prev => {
+      // Toggle the selected date to force a refresh, then set it back
+      const temp = '';
+      setTimeout(() => setSelectedDate(prev), 50);
+      return temp;
+    });
+  };
+
+  const handleRequestNewSuggestion = () => {
+    // Re-open the suggestion dialog
+    setIsSuggestionDialogVisible(true);
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer}
+        scrollEnabled={true} // Explicitly enable scrolling
+        showsVerticalScrollIndicator={true} // Show scroll indicator
+      >
         <View style={styles.container}>
           <Text style={styles.title}>Meal Planner</Text>
           
@@ -120,36 +139,25 @@ export default function TabFourScreen() {
                 )}
               </Text>
               
-              <View style={styles.inputContainer}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Add meal..."
-                  value={currentMeal}
-                  onChangeText={setCurrentMeal}
-                />
-                <TouchableOpacity style={styles.addButton} onPress={addMealPlan}>
-                  <Text style={styles.buttonText}>Add</Text>
-                </TouchableOpacity>
-              </View>
+              {isUserLoggedIn ? (
+                <>
+                  <AddMealForm
+                    selectedDate={selectedDate}
+                    selectedTimeInfo={selectedTimeInfo}
+                    onAddMeal={handleUpdateMealPlans}
+                    existingMealPlans={mealPlans}
+                    suggestedMeal={suggestedMeal}
+                    onRequestNewSuggestion={handleRequestNewSuggestion}
+                  />
 
-              {mealPlans[selectedDate]?.length > 0 ? (
-                <View style={styles.mealsList}>
-                  <Text style={styles.mealsListTitle}>Planned Meals:</Text>
-                  {mealPlans[selectedDate].map((meal, index) => (
-                    <View key={index} style={[
-                      styles.mealItem,
-                      meal.includes('[breakfast]') && styles.breakfastMealItem,
-                      meal.includes('[lunch]') && styles.lunchMealItem,
-                      meal.includes('[dinner]') && styles.dinnerMealItem,
-                      meal.includes('[afternoon_snack]') && styles.afternoonSnackMealItem,
-                      meal.includes('[midnight_snack]') && styles.midnightSnackMealItem,
-                    ]}>
-                      <Text style={styles.mealText}>{meal}</Text>
-                    </View>
-                  ))}
-                </View>
+                  <MealList 
+                    date={selectedDate}
+                  />
+                </>
               ) : (
-                <Text style={styles.noMealsText}>No meals planned for this day</Text>
+                <Text style={styles.loginPrompt}>
+                  Please log in to plan your meals
+                </Text>
               )}
             </View>
           ) : (
@@ -164,23 +172,30 @@ export default function TabFourScreen() {
         onSelectTime={handleSelectTime}
         selectedDate={selectedDate}
       />
+
+      <MealSuggestionDialog
+        isVisible={isSuggestionDialogVisible}
+        onClose={() => setIsSuggestionDialogVisible(false)}
+        onSelectMeal={handleSelectSuggestedMeal}
+        onManualInput={handleManualInput}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
     backgroundColor: Theme.colors.light,
+    flex: 1, // Add flex: 1 to ensure it takes full height
   },
   scrollContainer: {
     flexGrow: 1,
+    paddingHorizontal: Theme.spacing.md, // Add horizontal padding
   },
   container: {
-    flex: 1,
-    alignItems: 'center',
-    padding: Theme.spacing.lg,
+    padding: 0,
     marginBottom: Theme.spacing.xl,
+    // Remove any height constraints that might be limiting scrolling
   },
   title: {
     fontSize: Theme.typography.sizes.xl,
@@ -191,7 +206,7 @@ const styles = StyleSheet.create({
   calendar: {
     width: '100%',
     marginBottom: Theme.spacing.md,
-    borderRadius: Theme.roundness.md,
+    borderRadius: 0,
     ...Theme.shadows.light,
   },
   mealPlanSection: {
@@ -208,78 +223,16 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.md,
     color: Theme.colors.dark,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    marginBottom: Theme.spacing.md,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: Theme.colors.secondaryLight,
-    padding: Theme.spacing.sm,
-    borderRadius: Theme.roundness.sm,
-    marginRight: Theme.spacing.sm,
-    fontSize: Theme.typography.sizes.md,
-  },
-  addButton: {
-    padding: Theme.spacing.sm,
-    borderRadius: Theme.roundness.md,
-    backgroundColor: Theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Theme.shadows.medium,
-  },
-  mealsList: {
-    width: '100%',
-  },
-  mealsListTitle: {
-    fontSize: Theme.typography.sizes.md,
-    fontWeight: Theme.typography.weights.semibold,
-    marginBottom: Theme.spacing.sm,
-    color: Theme.colors.dark,
-  },
-  mealItem: {
-    padding: Theme.spacing.sm,
-    backgroundColor: Theme.colors.secondaryLight,
-    borderRadius: Theme.roundness.sm,
-    marginBottom: Theme.spacing.sm,
-  },
-  breakfastMealItem: {
-    borderLeftWidth: 4,
-    borderLeftColor: Theme.colors.warning,
-  },
-  lunchMealItem: {
-    borderLeftWidth: 4,
-    borderLeftColor: Theme.colors.success,
-  },
-  dinnerMealItem: {
-    borderLeftWidth: 4,
-    borderLeftColor: Theme.colors.primary,
-  },
-  afternoonSnackMealItem: {
-    borderLeftWidth: 4,
-    borderLeftColor: Theme.colors.warning, // Using the warning color (orange)
-  },
-  midnightSnackMealItem: {
-    borderLeftWidth: 4,
-    borderLeftColor: Theme.colors.secondary, // Using secondary color (soft pink)
-  },
-  mealText: {
-    fontSize: Theme.typography.sizes.md,
-    color: Theme.colors.dark,
-  },
-  noMealsText: {
-    fontSize: Theme.typography.sizes.md,
-    color: Theme.colors.secondary,
-    fontStyle: 'italic',
-    marginTop: Theme.spacing.sm,
-  },
-  buttonText: {
-    ...Theme.buttons.text,
-  },
   text: {
     color: Theme.colors.dark,
     fontSize: Theme.typography.sizes.lg,
     fontWeight: Theme.typography.weights.semibold,
     margin: Theme.spacing.lg,
-  }
+  },
+  loginPrompt: {
+    fontSize: Theme.typography.sizes.md,
+    color: Theme.colors.secondary,
+    textAlign: 'center',
+    marginVertical: Theme.spacing.lg,
+  },
 });

@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     borderBottomColor: Theme.colors.secondaryLight,
   },
   selectedTimeSlot: {
-    backgroundColor: Theme.colors.primaryLight,
+    backgroundColor: Theme.colors.primary,
   },
   breakfastTimeSlot: {
     borderLeftWidth: 4,
