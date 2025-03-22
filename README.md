@@ -71,3 +71,5 @@ Run the application using Expo:
 
 ## License
 This project is licensed under the MIT License.
+
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/centmarde/Mobile-Meal-Planner?utm_source=oss&utm_medium=github&utm_campaign=centmarde%2FMobile-Meal-Planner&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
