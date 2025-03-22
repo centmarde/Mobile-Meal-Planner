@@ -1,38 +1,33 @@
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, View, Image, Text } from 'react-native';
+import { Pressable, StyleSheet, View, Image, Text, Alert, ActivityIndicator } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Theme, { Colors } from '../utils/theme';
 import { auth } from '../../FirebaseConfig';
 import { signOut } from 'firebase/auth';
-import { Toaster, toast } from 'sonner';
 
 export default function SideBar() {
   const [collapsed, setCollapsed] = useState(true);
-
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleSignOut = async () => {
     try {
+      setIsSigningOut(true);
       await signOut(auth);
-      toast.success('Signed out successfully');
+      Alert.alert('Success', 'Signed out successfully');
       setTimeout(() => {
         window.location.href = '/';
       }, 2000);
     } catch (error: any) {
-      toast.error('Sign out failed: ' + error.message);
+      Alert.alert('Error', 'Sign out failed: ' + error.message);
+    } finally {
+      setIsSigningOut(false);
     }
   };
 
   return (
     <View style={styles.container}>
-       <Toaster 
-      position="top-center" 
-      toastOptions={{style: {
-        background: Colors.success, // Set your success color here
-        color: Colors.light,
-      },}}
-    />
       <Sidebar
         collapsed={collapsed}
         width="270px"
@@ -105,9 +100,21 @@ export default function SideBar() {
         
         {!collapsed && (
           <View style={styles.logoutContainer}>
-            <Pressable style={styles.logoutButton} onPress={handleSignOut}>
+            <Pressable 
+              style={styles.logoutButton} 
+              onPress={handleSignOut}
+              disabled={isSigningOut}
+            >
               <FontAwesome name="sign-out" size={20} color={Colors.light} />
-              <Text style={styles.logoutText}>Sign Out</Text>
+              {isSigningOut ? (
+                <ActivityIndicator 
+                  size="small" 
+                  color={Colors.light} 
+                  style={styles.logoutSpinner} 
+                />
+              ) : (
+                <Text style={styles.logoutText}>Sign Out</Text>
+              )}
             </Pressable>
           </View>
         )}
@@ -185,6 +192,9 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     ...Theme.buttons.text,
+    marginLeft: Theme.spacing.sm,
+  },
+  logoutSpinner: {
     marginLeft: Theme.spacing.sm,
   }
 });

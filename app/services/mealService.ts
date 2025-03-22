@@ -57,3 +57,11 @@ export const fetchMealDetails = async (id: string): Promise<MealDetails | null> 
     return null;
   }
 };
+
+// Add a default export that combines all meal service functions
+const mealService = {
+  fetchRandomMeal,
+  fetchMealDetails,
+};
+
+export default mealService;

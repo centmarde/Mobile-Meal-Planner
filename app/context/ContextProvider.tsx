@@ -12,3 +12,6 @@ export const ContextProvider = ({ children }: ContextProviderProps) => {
     </MealProvider>
   );
 };
+
+// Add default export
+export default ContextProvider;
