@@ -8,6 +8,7 @@ import { getMealEmoji, MealData } from '../utils/mealPlanUtils';
 import AddMealForm from '../components/threeComponents/AddMealForm';
 import MealList from '../components/threeComponents/MealList';
 import MealSuggestionDialog from '../components/threeComponents/MealSuggestionDialog';
+import { useUserStore } from '../store/userStore';
 
 export default function TabFourScreen() {
   const [selectedDate, setSelectedDate] = useState('');
@@ -17,19 +18,35 @@ export default function TabFourScreen() {
   const [isSuggestionDialogVisible, setIsSuggestionDialogVisible] = useState(false);
   const [selectedTimeInfo, setSelectedTimeInfo] = useState<MealTimeInfo | null>(null);
   const [suggestedMeal, setSuggestedMeal] = useState<MealData | null>(null);
-  const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
+  
+  // Replace local auth state with userStore
+  const { isAuthenticated, email, uid } = useUserStore();
 
   useEffect(() => {
     // Check if user is logged in
     const unsubscribe = auth.onAuthStateChanged(user => {
-      setIsUserLoggedIn(!!user);
-      if (!user) {
+      if (user) {
+        useUserStore.getState().setUser(user.email, user.uid);
+      } else {
+        useUserStore.getState().clearUser();
         Alert.alert('Authentication Required', 'Please log in to use the meal planner');
       }
+      
+      // Log the current user state
+      console.log('User Store State:', {
+        isAuthenticated: useUserStore.getState().isAuthenticated,
+        email: useUserStore.getState().email,
+        uid: useUserStore.getState().uid
+      });
     });
 
     return () => unsubscribe();
   }, []);
+
+  // Also log the user state whenever it's used in a render
+  useEffect(() => {
+    console.log('User authentication state in render:', { isAuthenticated, email, uid });
+  }, [isAuthenticated, email, uid]);
 
   interface DayObject {
     dateString: string;
@@ -106,7 +123,7 @@ export default function TabFourScreen() {
         showsVerticalScrollIndicator={true} // Show scroll indicator
       >
         <View style={styles.container}>
-          <Text style={styles.title}>Meal Planner</Text>
+        
           
           <Calendar
             onDayPress={handleDateSelect}
@@ -139,7 +156,7 @@ export default function TabFourScreen() {
                 )}
               </Text>
               
-              {isUserLoggedIn ? (
+              {isAuthenticated ? (
                 <>
                   <AddMealForm
                     selectedDate={selectedDate}

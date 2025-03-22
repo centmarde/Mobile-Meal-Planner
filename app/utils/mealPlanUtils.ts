@@ -162,3 +162,13 @@ export const formatSavedMealsForDisplay = (meals: SavedMeal[]): string[] => {
     }
   });
 };
+
+// Default export combining all meal plan utilities
+export default {
+  getMealEmoji,
+  createMealDescription,
+  addMealPlan,
+  saveMealToFirestore,
+  getMealsForDate,
+  formatSavedMealsForDisplay
+};

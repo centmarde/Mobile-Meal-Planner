@@ -42,7 +42,7 @@ const index = () => {
     <SafeAreaView style={styles.container}>
       <Image
         style={styles.logo}
-        source={require('../assets/images/adaptive-icon.png')}
+        source={require('../assets/misc/food.png')}
         resizeMode="contain"
       />
       
@@ -93,7 +93,7 @@ export default index
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    paddingTop: 50,
     alignItems: 'center',
     backgroundColor: Theme.colors.light,
   },
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     width: '90%',
-    marginTop: Theme.spacing.lg,
+    marginTop: 1,
   },
   buttonSpacer: {
     width: Theme.spacing.lg,
@@ -167,8 +167,8 @@ const styles = StyleSheet.create({
     ...Theme.buttons.text,
   },
   logo: {
-    width: 150,
-    height: 150,
+    width: 200,
+    height: 200,
     marginBottom: Theme.spacing.lg,
   },
 });
