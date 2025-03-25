@@ -1,75 +1,357 @@
-// Import TouchableOpacity from react-native
-import React, { useState } from 'react';
-import { SafeAreaView, StyleSheet, TouchableOpacity, Text, View } from 'react-native';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { app } from '../../FirebaseConfig';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, ScrollView, ActivityIndicator, Image, Alert } from 'react-native';
+import { useUserStore } from '../store/userStore';
+import { Theme, Colors } from '../utils/theme';
+import { 
+  UserProfile, 
+  getOrCreateUserProfile, 
+  updateUserProfile,
+  listenToUserProfile,
+} from '../components/fourComponents/fourOperations';
+import { Unsubscribe } from 'firebase/firestore';
 
-export default function TabFourScreen() {
-  const [functionResult, setFunctionResult] = useState('');
+export default function UserProfileScreen() {
+  const { uid, email, isAuthenticated } = useUserStore();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [editedProfile, setEditedProfile] = useState<UserProfile | null>(null);
+  
+  // Use a ref to store the unsubscribe function
+  const unsubscribeRef = useRef<Unsubscribe | null>(null);
 
-  const callHelloWorldFunction = async () => {
-    const functions = getFunctions(app, 'us-central1');
-    const helloWorld = httpsCallable(functions, 'helloWorld');
+  useEffect(() => {
+    if (isAuthenticated && uid) {
+      setLoading(true);
+      
+      // First ensure user has a profile
+      getOrCreateUserProfile(uid, email)
+        .then(() => {
+          // Then set up the listener
+          const unsubscribe = listenToUserProfile(uid, (profile) => {
+            if (profile) {
+              setUserProfile(profile);
+              setLoading(false);
+              console.log('Profile screen received real-time update:', profile.displayName);
+            }
+          });
+          
+          // Store the unsubscribe function
+          unsubscribeRef.current = unsubscribe;
+        })
+        .catch(error => {
+          console.error('Error setting up user profile:', error);
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+      setUserProfile(null);
+    }
+    
+    // Clean up the listener when component unmounts or user changes
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
+    };
+  }, [isAuthenticated, uid, email]);
+
+  const saveProfile = async () => {
+    if (!uid || !editedProfile) return;
+    
+    setLoading(true);
     try {
-      const result: any = await helloWorld();
-      setFunctionResult(result.data.message);
+      await updateUserProfile(uid, editedProfile);
+      // No need to setUserProfile here as the real-time listener will update it
+      setEditing(false);
     } catch (error) {
-      console.error("Error calling function:", error);
-      setFunctionResult('Failed to call function');
+      console.error('Error updating profile:', error);
+      setLoading(false);
     }
   };
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <Text style={styles.title}>Functions</Text>
-        <Text style={styles.text}>{functionResult}</Text>
-        <TouchableOpacity style={styles.button} onPress={callHelloWorldFunction}>
-          <Text style={styles.buttonText}>Call Hello World Function</Text>
-        </TouchableOpacity>
+  const startEditing = () => {
+    setEditedProfile(userProfile);
+    setEditing(true);
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.centeredContainer}>
+        <ActivityIndicator size="large" color={Colors.primary} />
       </View>
-    </SafeAreaView>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <View style={styles.centeredContainer}>
+        <Text style={styles.title}>Please log in to view your profile</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>My Profile</Text>
+        {!editing ? (
+          <TouchableOpacity style={styles.editButton} onPress={startEditing}>
+            <Text style={styles.editButtonText}>Edit</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.saveButton} onPress={saveProfile}>
+            <Text style={styles.saveButtonText}>Save</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <View style={styles.profileContainer}>
+        <View style={styles.avatarContainer}>
+          {userProfile?.profilePicture ? (
+            <Image source={{ uri: userProfile.profilePicture }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarText}>{userProfile?.displayName?.charAt(0) || 'U'}</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.infoSection}>
+          <Text style={styles.sectionTitle}>Display Name</Text>
+          {editing ? (
+            <TextInput
+              style={styles.input}
+              value={editedProfile?.displayName}
+              onChangeText={(text) => setEditedProfile({ ...editedProfile!, displayName: text })}
+              placeholder="Your name"
+            />
+          ) : (
+            <Text style={styles.sectionContent}>{userProfile?.displayName}</Text>
+          )}
+        </View>
+
+        <View style={styles.infoSection}>
+          <Text style={styles.sectionTitle}>Bio</Text>
+          {editing ? (
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={editedProfile?.bio}
+              onChangeText={(text) => setEditedProfile({ ...editedProfile!, bio: text })}
+              placeholder="Tell us about yourself..."
+              multiline
+              numberOfLines={4}
+            />
+          ) : (
+            <Text style={styles.sectionContent}>{userProfile?.bio}</Text>
+          )}
+        </View>
+
+        <View style={styles.infoSection}>
+          <Text style={styles.sectionTitle}>Dietary Preferences</Text>
+          {editing ? (
+            <View style={styles.preferencesContainer}>
+              {['Vegetarian', 'Vegan', 'Pescatarian', 'Gluten-Free', 'Keto', 'Paleo'].map((pref) => (
+                <TouchableOpacity
+                  key={pref}
+                  style={[
+                    styles.preferenceTag,
+                    editedProfile?.dietaryPreferences.includes(pref) && styles.activePreferenceTag,
+                  ]}
+                  onPress={() => {
+                    const current = [...(editedProfile?.dietaryPreferences || [])];
+                    if (current.includes(pref)) {
+                      setEditedProfile({
+                        ...editedProfile!,
+                        dietaryPreferences: current.filter((p) => p !== pref),
+                      });
+                    } else {
+                      setEditedProfile({
+                        ...editedProfile!,
+                        dietaryPreferences: [...current, pref],
+                      });
+                    }
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.preferenceTagText,
+                      editedProfile?.dietaryPreferences.includes(pref) && styles.activePreferenceTagText,
+                    ]}
+                  >
+                    {pref}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.preferencesContainer}>
+              {userProfile?.dietaryPreferences.length ? (
+                userProfile.dietaryPreferences.map((pref) => (
+                  <View key={pref} style={styles.preferenceTag}>
+                    <Text style={styles.preferenceTagText}>{pref}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.emptyText}>No preferences set</Text>
+              )}
+            </View>
+          )}
+        </View>
+
+        <View style={styles.infoSection}>
+          <Text style={styles.sectionTitle}>Favorite Recipes</Text>
+          {userProfile?.favoriteRecipes.length ? (
+            <Text style={styles.sectionContent}>
+              You have {userProfile.favoriteRecipes.length} favorite recipes
+            </Text>
+          ) : (
+            <Text style={styles.emptyText}>No favorite recipes yet</Text>
+          )}
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
   container: {
     flex: 1,
-    alignItems: 'center',
+    backgroundColor: Colors.light,
+  },
+  centeredContainer: {
+    flex: 1,
     justifyContent: 'center',
-    padding: 20,
-    marginBottom: -40,
+    alignItems: 'center',
+    backgroundColor: Colors.light,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: Theme.spacing.lg,
+    backgroundColor: Colors.primary,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    fontSize: Theme.typography.sizes.xl,
+    fontWeight: Theme.typography.weights.bold as any,
+    color: Colors.light,
   },
-  button: {
-    padding: 10,
-    borderRadius: 15,
+  profileContainer: {
+    padding: Theme.spacing.lg,
+  },
+  avatarContainer: {
     alignItems: 'center',
+    marginBottom: Theme.spacing.lg,
+  },
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
+    borderColor: Colors.primary,
+  },
+  avatarPlaceholder: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: Colors.secondary,
     justifyContent: 'center',
-    backgroundColor: '#5C6BC0',
-    shadowColor: '#5C6BC0',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 5,
-    elevation: 5,
-    marginLeft: 10,
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: Colors.primary,
   },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
+  avatarText: {
+    fontSize: 48,
+    color: Colors.light,
+    fontWeight: Theme.typography.weights.bold as any,
   },
-  text: {
-    color: '#000', // Maintained white for clear visibility
-    fontSize: 18, // Slightly larger for emphasis
-    fontWeight: '600', // Semi-bold for a balanced weight
-    margin: 20,
-  }
+  infoSection: {
+    marginBottom: Theme.spacing.lg,
+    backgroundColor: '#fff',
+    borderRadius: Theme.roundness.md,
+    padding: Theme.spacing.md,
+    ...Theme.shadows.light,
+  },
+  sectionTitle: {
+    fontSize: Theme.typography.sizes.md,
+    fontWeight: Theme.typography.weights.semibold as any,
+    color: Colors.primary,
+    marginBottom: Theme.spacing.xs,
+  },
+  sectionContent: {
+    fontSize: Theme.typography.sizes.md,
+    color: Colors.dark,
+  },
+  editButton: {
+    backgroundColor: Colors.primaryLight,
+    paddingVertical: Theme.spacing.xs,
+    paddingHorizontal: Theme.spacing.md,
+    borderRadius: Theme.roundness.sm,
+  },
+  editButtonText: {
+    color: Colors.light,
+    fontWeight: Theme.typography.weights.medium as any,
+  },
+  saveButton: {
+    backgroundColor: Colors.success,
+    paddingVertical: Theme.spacing.xs,
+    paddingHorizontal: Theme.spacing.md,
+    borderRadius: Theme.roundness.sm,
+  },
+  saveButtonText: {
+    color: Colors.light,
+    fontWeight: Theme.typography.weights.medium as any,
+  },
+  deleteButton: {
+    backgroundColor: Colors.error,
+    paddingVertical: Theme.spacing.sm,
+    paddingHorizontal: Theme.spacing.md,
+    borderRadius: Theme.roundness.sm,
+    alignItems: 'center',
+    marginTop: Theme.spacing.md,
+  },
+  deleteButtonText: {
+    color: Colors.light,
+    fontWeight: Theme.typography.weights.medium as any,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: Colors.secondaryLight,
+    borderRadius: Theme.roundness.sm,
+    padding: Theme.spacing.sm,
+    fontSize: Theme.typography.sizes.md,
+    color: Colors.dark,
+  },
+  textArea: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  preferencesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: Theme.spacing.xs,
+  },
+  preferenceTag: {
+    backgroundColor: Colors.secondaryLight,
+    borderRadius: Theme.roundness.sm,
+    paddingVertical: Theme.spacing.xs,
+    paddingHorizontal: Theme.spacing.sm,
+    margin: 4,
+  },
+  preferenceTagText: {
+    color: Colors.dark,
+    fontSize: Theme.typography.sizes.sm,
+  },
+  activePreferenceTag: {
+    backgroundColor: Colors.primary,
+  },
+  activePreferenceTagText: {
+    color: Colors.light,
+  },
+  emptyText: {
+    color: Colors.secondaryDark,
+    fontStyle: 'italic',
+  },
 });

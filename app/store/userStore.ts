@@ -53,7 +53,7 @@ export const useUserStore = create<UserState>()(
       },
       clearUser: () => {
         console.log('User cleared');
-       /*  set({ email: null, uid: null, isAuthenticated: false }); */
+        set({ email: null, uid: null, isAuthenticated: false });
       },
     }),
     {

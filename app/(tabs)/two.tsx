@@ -1,12 +1,12 @@
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, Modal, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import useUserStore from '../store/userStore';
 import { Theme } from '../utils/theme';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import { Meal } from '../types/mealTypes';
-import { fetchMeals, addMeal, updateMeal, deleteMeal, groupMealsByDate } from '../components/twoComponents/TwoOperations';
+import { subscribeToMeals, addMeal, updateMeal, deleteMeal, groupMealsByDate } from '../components/twoComponents/TwoOperations';
 
 export default function TabTwoScreen() {
   const [meals, setMeals] = useState<Meal[]>([]);
@@ -20,20 +20,42 @@ export default function TabTwoScreen() {
   const [mealTime, setMealTime] = useState('12:00 AM');
   const [mealType, setMealType] = useState('breakfast');
 
-  useEffect(() => {
-    if (useUserStore.getState().isAuthenticated) {
-      loadMeals();
-    }
-  }, [useUserStore.getState().isAuthenticated]);
+  // Use useRef to store the unsubscribe function
+  const unsubscribeRef = useRef<() => void | null>();
 
-  const loadMeals = async () => {
-    if (!useUserStore.getState().isAuthenticated) return;
+  useEffect(() => {
+    // Set up the real-time subscription when the component mounts
+    // or when authentication state changes
+    if (useUserStore.getState().isAuthenticated) {
+      setLoading(true);
+      
+      // Subscribe to meals and get the unsubscribe function
+      const unsubscribe = subscribeToMeals(
+        (updatedMeals) => {
+          setMeals(updatedMeals);
+          setLoading(false);
+        },
+        (error) => {
+          console.error("Subscription error:", error);
+          setLoading(false);
+        }
+      );
+      
+      // Store the unsubscribe function
+      unsubscribeRef.current = unsubscribe;
+    } else {
+      setMeals([]);
+      setLoading(false);
+    }
     
-    setLoading(true);
-    const mealsList = await fetchMeals();
-    setMeals(mealsList);
-    setLoading(false);
-  };
+    // Clean up the subscription when the component unmounts
+    // or when authentication state changes
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
+    };
+  }, [useUserStore.getState().isAuthenticated]);
 
   const handleAddMeal = async () => {
     if (!useUserStore.getState().isAuthenticated) {
@@ -50,8 +72,8 @@ export default function TabTwoScreen() {
     
     if (success) {
       resetForm();
-      loadMeals();
       setModalVisible(false);
+      // No need to call loadMeals() as the real-time listener will update the UI
     }
   };
 
@@ -71,8 +93,8 @@ export default function TabTwoScreen() {
     
     if (success) {
       resetForm();
-      loadMeals();
       setModalVisible(false);
+      // No need to call loadMeals() as the real-time listener will update the UI
     }
   };
 
@@ -82,23 +104,8 @@ export default function TabTwoScreen() {
       return;
     }
     
-    Alert.alert(
-      'Delete Meal',
-      `Are you sure you want to delete "${mealName}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive', 
-          onPress: async () => {
-            const success = await deleteMeal(mealId);
-            if (success) {
-              loadMeals();
-            }
-          } 
-        }
-      ]
-    );
+    await deleteMeal(mealId, mealName);
+    // No need to call loadMeals() as the real-time listener will update the UI
   };
 
   const openAddModal = () => {

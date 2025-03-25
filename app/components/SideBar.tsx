@@ -6,6 +6,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Theme, { Colors } from '../utils/theme';
 import { auth } from '../../FirebaseConfig';
 import { signOut } from 'firebase/auth';
+import useUserStore from '../store/userStore';
 
 export default function SideBar() {
   const [collapsed, setCollapsed] = useState(true);
@@ -15,6 +16,8 @@ export default function SideBar() {
     try {
       setIsSigningOut(true);
       await signOut(auth);
+      // Clear user data from the store
+      useUserStore.getState().clearUser();
       Alert.alert('Success', 'Signed out successfully');
       setTimeout(() => {
         window.location.href = '/';

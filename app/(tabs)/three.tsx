@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SafeAreaView, StyleSheet, Text, View, ScrollView, Alert } from 'react-native';
-import { app, auth } from '../../FirebaseConfig';
+// Removed Firebase import
 import { Theme } from '../utils/theme';
 import { Calendar } from 'react-native-calendars';
 import TimeSelectionDialog, { MealTimeInfo } from '../components/TimeSelectionDialog';
@@ -19,33 +19,17 @@ export default function TabFourScreen() {
   const [selectedTimeInfo, setSelectedTimeInfo] = useState<MealTimeInfo | null>(null);
   const [suggestedMeal, setSuggestedMeal] = useState<MealData | null>(null);
   
-  // Replace local auth state with userStore
+  // Use userStore for authentication state
   const { isAuthenticated, email, uid } = useUserStore();
 
-  useEffect(() => {
-    // Check if user is logged in
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      if (user) {
-        useUserStore.getState().setUser(user.email, user.uid);
-      } else {
-        useUserStore.getState().clearUser();
-        Alert.alert('Authentication Required', 'Please log in to use the meal planner');
-      }
-      
-      // Log the current user state
-      console.log('User Store State:', {
-        isAuthenticated: useUserStore.getState().isAuthenticated,
-        email: useUserStore.getState().email,
-        uid: useUserStore.getState().uid
-      });
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  // Also log the user state whenever it's used in a render
+  // Only log the user state whenever it's used in a render
   useEffect(() => {
     console.log('User authentication state in render:', { isAuthenticated, email, uid });
+    
+    // Show alert if not authenticated
+    if (!isAuthenticated) {
+      Alert.alert('Authentication Required', 'Please log in to use the meal planner');
+    }
   }, [isAuthenticated, email, uid]);
 
   interface DayObject {

@@ -1,6 +1,6 @@
 import { Alert } from 'react-native';
 import { db } from '../../../FirebaseConfig';
-import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
 import { Meal } from '../../types/mealTypes';
 import useUserStore from '../../store/userStore';
 
@@ -9,6 +9,51 @@ const getCurrentUserId = () => {
   return useUserStore.getState().uid;
 };
 
+// This function now returns an unsubscribe function for cleanup
+export const subscribeToMeals = (
+  onMealsUpdate: (meals: Meal[]) => void,
+  onError?: (error: Error) => void
+): (() => void) => {
+  const uid = getCurrentUserId();
+  
+  if (!useUserStore.getState().isAuthenticated || !uid) {
+    console.log('User not authenticated');
+    onMealsUpdate([]);
+    return () => {}; // Empty unsubscribe function when not authenticated
+  }
+  
+  try {
+    const mealsQuery = query(
+      collection(db, 'meals'),
+      where('userId', '==', uid),
+      orderBy('date', 'asc')
+    );
+    
+    // Set up real-time listener
+    const unsubscribe = onSnapshot(mealsQuery, 
+      (querySnapshot) => {
+        const mealsList: Meal[] = [];
+        querySnapshot.forEach((doc) => {
+          mealsList.push({ id: doc.id, ...doc.data() } as Meal);
+        });
+        onMealsUpdate(mealsList);
+      },
+      (error) => {
+        console.error('Error in meals subscription:', error);
+        if (onError) onError(error);
+        Alert.alert('Error', 'Failed to load meals');
+      }
+    );
+    
+    return unsubscribe;
+  } catch (error) {
+    console.error('Error setting up meals subscription:', error);
+    Alert.alert('Error', 'Failed to set up meals subscription');
+    return () => {}; // Return empty function in case of error
+  }
+};
+
+// Keep the original fetchMeals for backward compatibility if needed
 export const fetchMeals = async (): Promise<Meal[]> => {
   const uid = getCurrentUserId();
   
@@ -111,7 +156,7 @@ export const updateMeal = async (
   }
 };
 
-export const deleteMeal = async (mealId: string): Promise<boolean> => {
+export const deleteMeal = async (mealId: string, mealName: string): Promise<boolean> => {
   if (!useUserStore.getState().isAuthenticated) {
     Alert.alert('Error', 'You must be logged in to delete meals');
     return false;

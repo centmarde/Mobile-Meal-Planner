@@ -1,5 +1,6 @@
 import { MealTimeInfo } from '../components/TimeSelectionDialog';
-import { db, auth } from '../../FirebaseConfig';
+import { db } from '../../FirebaseConfig';
+import { useUserStore } from '../store/userStore';
 import { collection, addDoc, query, where, getDocs, DocumentData } from 'firebase/firestore';
 
 export interface MealData {
@@ -88,14 +89,14 @@ export const saveMealToFirestore = async (
   mealData: MealData | null
 ): Promise<string | null> => {
   try {
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
+    const { isAuthenticated, uid } = useUserStore.getState();
+    if (!isAuthenticated || !uid) {
       console.error('No authenticated user found');
       return null;
     }
 
     const mealToSave: SavedMeal = {
-      userId: currentUser.uid,
+      userId: uid,
       date: date,
       mealTime: timeInfo?.time || '',
       mealType: timeInfo?.mealType || null,
@@ -115,15 +116,15 @@ export const saveMealToFirestore = async (
 // Get meals for a specific date
 export const getMealsForDate = async (date: string): Promise<SavedMeal[]> => {
   try {
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
+    const { isAuthenticated, uid } = useUserStore.getState();
+    if (!isAuthenticated || !uid) {
       console.error('No authenticated user found');
       return [];
     }
 
     const q = query(
       collection(db, 'meals'),
-      where('userId', '==', currentUser.uid),
+      where('userId', '==', uid),
       where('date', '==', date)
     );
 
