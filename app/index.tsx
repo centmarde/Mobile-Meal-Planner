@@ -7,15 +7,18 @@ import SignUpModal from './components/SignUpModal'
 import { Theme } from './utils/theme';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useUserStore } from './store/userStore';
 
 const index = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isModalVisible, setModalVisible] = useState(false);
+  const setUser = useUserStore(state => state.setUser);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
+        setUser(user.email, user.uid);
         setTimeout(() => {
           router.replace('/(tabs)');
         }, 0);
@@ -27,8 +30,10 @@ const index = () => {
 
   const signIn = async () => {
     try {
-      const user = await signInWithEmailAndPassword(auth, email, password)
-      if (user) {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      if (userCredential) {
+        const user = userCredential.user;
+        setUser(user.email, user.uid);
         Alert.alert("Success", "Successfully signed in!");
         router.replace('/(tabs)');
       }
